@@ -8,8 +8,7 @@
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
   "forwardPorts": [
-    "22111",
-    "22112"
+    22111,
+    22112
   ]
 }
-
