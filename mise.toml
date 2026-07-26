@@ -3,6 +3,7 @@ python = "3.13"
 vim = "latest"
 uv = "latest"
 pre-commit = "latest"
+trivy = "latest"
 
 [settings]
 python.uv_venv_auto = "create|source"
