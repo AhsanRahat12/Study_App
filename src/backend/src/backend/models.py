@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import Dict
+
+from pydantic import BaseModel, Field
 
 
 class StudySessionCreate(BaseModel):
@@ -27,9 +27,9 @@ class Stats(BaseModel):
     """Model for aggregated statistics"""
 
     total_time: int = Field(..., description="Total study time in minutes")
-    time_by_tag: Dict[str, int] = Field(..., description="Study time grouped by tag")
+    time_by_tag: dict[str, int] = Field(..., description="Study time grouped by tag")
     total_sessions: int = Field(..., description="Total number of study sessions")
-    sessions_by_tag: Dict[str, int] = Field(
+    sessions_by_tag: dict[str, int] = Field(
         ..., description="Number of sessions grouped by tag"
     )
 
