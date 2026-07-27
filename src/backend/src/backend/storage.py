@@ -1,12 +1,11 @@
 import csv
+import logging
 import os
 import uuid
-from datetime import datetime
-from typing import List, Dict
-import logging
+from datetime import UTC, datetime
 
-from .models import StudySession, StudySessionCreate, Stats
 from .config import DATA_DIR
+from .models import Stats, StudySession, StudySessionCreate
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -37,7 +36,7 @@ def save_session(session: StudySessionCreate) -> StudySession:
     # Create a complete StudySession with generated fields
     new_session = StudySession(
         id=str(uuid.uuid4()),
-        timestamp=datetime.now(),
+        timestamp=datetime.now(tz=UTC),
         minutes=session.minutes,
         tag=session.tag,
     )
@@ -58,7 +57,7 @@ def save_session(session: StudySessionCreate) -> StudySession:
     return new_session
 
 
-def get_all_sessions() -> List[StudySession]:
+def get_all_sessions() -> list[StudySession]:
     """Retrieve all study sessions from the CSV file"""
     _create_csv_if_not_exists()
     sessions = []
@@ -79,7 +78,7 @@ def get_all_sessions() -> List[StudySession]:
     return sessions
 
 
-def get_sessions_by_tag(tag: str) -> List[StudySession]:
+def get_sessions_by_tag(tag: str) -> list[StudySession]:
     """Retrieve study sessions filtered by tag"""
     all_sessions = get_all_sessions()
     filtered_sessions = [
@@ -97,8 +96,8 @@ def get_statistics() -> Stats:
     total_minutes = sum(session.minutes for session in sessions)
 
     # Calculate minutes by tag
-    time_by_tag: Dict[str, int] = {}
-    sessions_by_tag: Dict[str, int] = {}
+    time_by_tag: dict[str, int] = {}
+    sessions_by_tag: dict[str, int] = {}
 
     for session in sessions:
         tag = session.tag
