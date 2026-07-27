@@ -78,9 +78,7 @@ async def read_sessions(
             return get_all_sessions()
     except OSError as e:
         logger.error(f"Error fetching sessions: {e!s}")
-        raise HTTPException(
-            status_code=500, detail=f"Error fetching sessions: {e!s}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error fetching sessions: {e!s}")
 
 
 @app.get("/stats", response_model=Stats)
@@ -91,9 +89,7 @@ async def read_stats():
         return get_statistics()
     except OSError as e:
         logger.error(f"Error fetching statistics: {e!s}")
-        raise HTTPException(
-            status_code=500, detail=f"Error fetching statistics: {e!s}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error fetching statistics: {e!s}")
 
 
 # Marker for CI pipeline
@@ -114,4 +110,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

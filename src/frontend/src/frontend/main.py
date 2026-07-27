@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify
-import requests
 import logging
-from datetime import datetime
 import os
-from typing import Dict, List, Any
+from datetime import datetime
+from typing import Any
+
+import requests
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 # Configure logging
 logging.basicConfig(
@@ -22,7 +23,7 @@ app.config["DEBUG"] = os.getenv("FLASK_DEBUG", "False").lower() == "true"
 app.config["HOST"] = os.getenv("FRONTEND_HOST", "0.0.0.0")
 
 
-def format_session(session: Dict[str, Any]) -> Dict[str, Any]:
+def format_session(session: dict[str, Any]) -> dict[str, Any]:
     """Format a session's timestamp for display"""
     timestamp = datetime.fromisoformat(session["timestamp"].replace("Z", "+00:00"))
     session["formatted_date"] = timestamp.strftime("%Y-%m-%d %H:%M")
@@ -31,7 +32,7 @@ def format_session(session: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # Helper functions for API calls
-def get_sessions() -> List[Dict[str, Any]]:
+def get_sessions() -> list[dict[str, Any]]:
     """Get all study sessions from the API"""
     try:
         response = requests.get(
@@ -48,7 +49,7 @@ def get_sessions() -> List[Dict[str, Any]]:
 
         return sessions
     except requests.RequestException as e:
-        logger.error(f"Error fetching sessions: {str(e)}")
+        logger.error(f"Error fetching sessions: {e!s}")
         return []
 
 
@@ -64,7 +65,7 @@ def create_session(minutes: int, tag: str) -> bool:
         response.raise_for_status()
         return True
     except requests.RequestException as e:
-        logger.error(f"Error creating session: {str(e)}")
+        logger.error(f"Error creating session: {e!s}")
         return False
 
 
@@ -131,4 +132,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
