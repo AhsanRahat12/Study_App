@@ -5,8 +5,7 @@ A Flask web application for tracking study time for DevOps certifications.
 """
 
 # Import and expose main functions and app
-from .main import app, get_sessions, create_session
+from .main import app, create_session, get_sessions
 
 # Define public API
-__all__ = ["app", "get_sessions", "create_session"]
-
+__all__ = ["app", "create_session", "get_sessions"]
