@@ -2,6 +2,7 @@ from contextlib import contextmanager
 
 import pytest
 from flask import template_rendered
+
 from frontend.main import app
 
 
