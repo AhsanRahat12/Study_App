@@ -25,7 +25,7 @@ app.config["HOST"] = os.getenv("FRONTEND_HOST", "0.0.0.0")
 
 def format_session(session: dict[str, Any]) -> dict[str, Any]:
     """Format a session's timestamp for display"""
-    timestamp = datetime.fromisoformat(session["timestamp"].replace("Z", "+00:00"))
+    timestamp = datetime.fromisoformat(session["timestamp"])
     session["formatted_date"] = timestamp.strftime("%Y-%m-%d %H:%M")
     session["timestamp_obj"] = timestamp
     return session
