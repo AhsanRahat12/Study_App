@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/AhsanRahat12/Study_App/compare/backend-v0.1.0...backend-v0.2.0) (2026-07-29)
+
+
+### Features
+
+* **backend:** Added container image building and pushing ([#9](https://github.com/AhsanRahat12/Study_App/issues/9)) ([c496079](https://github.com/AhsanRahat12/Study_App/commit/c496079d1881fe37d1b0ec3cc00ff19fdefb1950))
+
 ## 0.1.0 (2026-07-29)
 
 
