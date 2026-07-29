@@ -2,17 +2,16 @@ import csv
 import os
 from unittest import mock
 
-import pytest
-import pytest_asyncio
-from httpx import AsyncClient
-
 # Import the storage module itself
 import backend.storage as storage_module
+import pytest
+import pytest_asyncio
 
 # Import the FastAPI app and models from the proper package path
 from backend.main import app
 from backend.models import StudySessionCreate
 from backend.storage import save_session
+from httpx import AsyncClient
 
 # Define the path for a temporary test data file using relative paths
 TEST_DATA_FILE = os.path.join(os.path.dirname(__file__), "test_sessions.csv")

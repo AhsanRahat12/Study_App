@@ -3,10 +3,9 @@ import os
 import uuid
 from datetime import UTC, datetime
 
-import pytest
-
 # Import the storage module itself
 import backend.storage as storage_module
+import pytest
 from backend.models import StudySession, StudySessionCreate
 
 # Import functions and variables from storage.py using new package structure
