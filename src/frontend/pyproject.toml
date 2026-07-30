@@ -1,6 +1,6 @@
 [project]
 name = "study-tracker-frontend"
-version = "0.0.0"
+version = "0.1.0"
 description = "Frontend for Study Tracker applicaion"
 readme = "README.md"
 authors = [{ name = "AhsanRahat12", email = "rahatahsan@gmail.com" }]
