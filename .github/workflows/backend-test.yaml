@@ -1,6 +1,3 @@
-
-# .github/workflows/backend-tests.yaml
-
 name: Backend Tests
 
 on:
@@ -9,8 +6,10 @@ on:
 jobs:
   check_paths:
     runs-on: ubuntu-latest
+
     outputs:
       should_run: ${{ steps.filter.outputs.backend }}
+
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3.0.2
@@ -49,7 +48,6 @@ jobs:
           uv run ruff check --output-format=github --target-version=py313 src tests
           uv run ruff format --diff --check --target-version=py313 src tests
 
-
       - name: Run tests with coverage
         run: |
           uv run pytest tests/ -v --cov=src/backend --cov-report=xml --cov-fail-under=80
@@ -78,10 +76,8 @@ jobs:
           recreate: true
           path: code-coverage-results.md
 
-
       - name: Build Docker image
         run: docker build -t backend-app:latest .
-      
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@v0.36.0
@@ -94,5 +90,10 @@ jobs:
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
 
+  trigger_e2e:
+    name: Trigger E2E Tests
+    needs: test
+    if: success()
+    uses: ./.github/workflows/e2e-tests.yaml
 
 

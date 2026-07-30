@@ -5,6 +5,9 @@ uv = "latest"
 pre-commit = "latest"
 trivy = "latest"
 ruff = "latest"
+k3d = "latest"
+kubectl = "latest"
+k9s = "latest"
 
 [settings]
 python.uv_venv_auto = "create|source"
@@ -17,3 +20,16 @@ GITOPS_REPO = 'study-app-gitops'
 
 [hooks]
 enter = "bash ./scripts/setup_project"
+
+
+[tasks.k8s-setup-local]
+description = "Set up a basic Kubernetes cluster for development that builds the local images and applies them"
+run = "./Kubernetes/setup_cluster_local"
+
+[tasks.k8s-setup-minimal]
+description = "Set up a minimal Kubernetes cluster for testing. Does not apply anything."
+run = "./Kubernetes/setup_cluster_minimal"
+
+[tasks.e2e-test]
+description = "Run end-to-end tests on the Kubernetes deployment"
+run = "cd ./Kubernetes && uv run e2e_test.py"
