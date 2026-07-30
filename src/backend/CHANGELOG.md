@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/AhsanRahat12/Study_App/compare/backend-v0.2.0...backend-v0.3.0) (2026-07-30)
+
+
+### Features
+
+* **backend:** trigger the new releasase to verify docker push fix ([#12](https://github.com/AhsanRahat12/Study_App/issues/12)) ([32856b6](https://github.com/AhsanRahat12/Study_App/commit/32856b6065a596fbcc1e9ab33a06e22a1d5519e7))
+
 ## [0.2.0](https://github.com/AhsanRahat12/Study_App/compare/backend-v0.1.0...backend-v0.2.0) (2026-07-29)
 
 
