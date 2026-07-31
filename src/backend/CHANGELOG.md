@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/AhsanRahat12/Study_App/compare/backend-v0.3.0...backend-v0.3.1) (2026-07-31)
+
+
+### Bug Fixes
+
+* **backend:** trigger ci ([#19](https://github.com/AhsanRahat12/Study_App/issues/19)) ([5f377c3](https://github.com/AhsanRahat12/Study_App/commit/5f377c3e9c46ea80142e045905ed537e3f0b76fd))
+
 ## [0.3.0](https://github.com/AhsanRahat12/Study_App/compare/backend-v0.2.0...backend-v0.3.0) (2026-07-30)
 
 
