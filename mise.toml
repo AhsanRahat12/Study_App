@@ -8,6 +8,8 @@ ruff = "latest"
 k3d = "latest"
 kubectl = "latest"
 k9s = "latest"
+gh = "latest"
+flux2 = "latest"
 
 [settings]
 python.uv_venv_auto = "create|source"
@@ -15,7 +17,7 @@ idiomatic_version_file_enable_tools = ["python"]
 experimental = true
 
 [env]
-APP_REPO = 'study-app'
+APP_REPO = 'Study_App'
 GITOPS_REPO = 'study-app-gitops'
 
 [hooks]
@@ -33,3 +35,11 @@ run = "./Kubernetes/setup_cluster_minimal"
 [tasks.e2e-test]
 description = "Run end-to-end tests on the Kubernetes deployment"
 run = "cd ./Kubernetes && uv run e2e_test.py"
+
+[tasks.setup-keys]
+description = "Set up deploy keys for our repo"
+run = "bash ./scripts/setup_deploy_keys"
+
+[tasks.k8s-setup-gitops]
+description = "Set up a cluster configured with GitOps using Flux"
+run = "bash ./Kubernetes/setup_cluster_gitops"
