@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/AhsanRahat12/Study_App/compare/backend-v0.3.1...backend-v0.3.2) (2026-07-31)
+
+
+### Bug Fixes
+
+* **backend:** trigger release to verify secrets fix ([#21](https://github.com/AhsanRahat12/Study_App/issues/21)) ([729dc9b](https://github.com/AhsanRahat12/Study_App/commit/729dc9b13a51adca5ed3cdb320f6f35d626b6f53))
+
 ## [0.3.1](https://github.com/AhsanRahat12/Study_App/compare/backend-v0.3.0...backend-v0.3.1) (2026-07-31)
 
 
