@@ -1,123 +1,136 @@
-# Study App
+# 📚 Study App
 
-A full-stack study-tracking application, built primarily as an infrastructure and DevOps engineering exercise: a small FastAPI/Flask app used as the vehicle to design, build, and operate a complete containerized, GitOps-driven deployment pipeline — from local development environment through CI to Kubernetes.
+A study-session tracker (FastAPI + Flask) used as the vehicle for a complete, containerized, GitOps-driven deployment pipeline — from local dev through CI to Kubernetes. The app is intentionally simple; the engineering depth is in how it's built, tested, secured, released, and deployed.
 
-**This README documents the infrastructure and delivery pipeline.** The application itself (a study-session tracker) is intentionally simple; the engineering depth is in how it's built, tested, secured, released, and deployed.
-
-> **Where deployments actually live:** this repository holds application source code and CI/CD pipeline definitions only. It contains **no deployment manifests**. All Kubernetes manifests, per-environment configuration, and released image tags are managed in a dedicated, separate repository — [`study-app-gitops`](https://github.com/AhsanRahat12/study-app-gitops) — which the pipelines below keep automatically in sync. That repo is the single source of truth for "what version is running where."
+> **Where deployments actually live:** this repo holds application source and CI/CD pipeline definitions only — **no deployment manifests**. All Kubernetes manifests, per-environment config, and released image tags live in a separate repo, [`study-app-gitops`](https://github.com/AhsanRahat12/study-app-gitops), which the pipelines below keep automatically in sync.
 
 ---
 
-## Architecture Overview
+## Philosophy
+
+Backend and frontend are treated as fully independent services end-to-end — separate versioning, separate images, separate release cadence, separate promotion to production. A frontend-only change never triggers a backend rebuild, redeploy, or version bump, and vice versa.
+
+The pipeline is deliberately **not** one monolithic workflow. It's a set of small, independently-triggered GitHub Actions workflows chained together with path filtering and reusable `workflow_call`s — each stage stays readable and debuggable rather than folded into one opaque file. That calculus would flip at much larger scale (many more services/teams), but at this project's size, explicit beats DRY.
+
+Dev auto-deploys, prod requires a pull request — a concrete, opinionated trust boundary: speed where the cost of being wrong is low, a human checkpoint where it isn't. And the cluster never receives `kubectl apply` from CI directly — every change flows through Git first via GitOps, giving a full audit trail and a deployed state that's reproducible from source control alone.
+
+---
+
+## Architecture
 
 ![Study App CI/CD and GitOps architecture](./architecture.svg)
 
-Backend and frontend are treated as **fully independent services** throughout the entire pipeline — separate versioning, separate images, separate release cadence, separate promotion to production. A frontend-only change never triggers a backend rebuild, redeploy, or version bump, and vice versa.
+---
+
+## 🧰 Stack
+
+| Tool | Purpose |
+|---|---|
+| FastAPI | Backend API (`src/backend`) |
+| Flask | Frontend web app (`src/frontend`) |
+| `uv` + Ruff | Dependency management, linting, formatting |
+| Pytest + `pytest-cov` | Unit/integration tests, coverage-gated CI |
+| Docker | Multi-stage, non-root, Alpine-based images |
+| Trivy | Container vulnerability scanning (CI gate) |
+| GitHub Actions | Path-filtered, reusable-workflow CI/CD |
+| release-please | Conventional-Commits-driven semantic versioning, per component |
+| Kustomize | Base + environment-overlay Kubernetes manifests |
+| Flux | GitOps controller — reconciles the cluster from `study-app-gitops` |
+| k3d | Disposable local Kubernetes for dev + e2e testing |
+| `mise` | Toolchain version pinning + task runner |
+| Dev Containers | Reproducible, zero-drift dev environment |
 
 ---
 
-## Infrastructure & Environment Setup
-
-- **Reproducible dev environment**: a devcontainer with Docker-in-Docker, so the entire toolchain (Docker, `k3d`, `kubectl`, `flux`, `gh`, `uv`, `ruff`) is version-pinned and identical for any contributor, with zero "works on my machine" drift.
-- **`mise`** manages all tool versions and exposes the project's operational commands as discoverable, documented tasks (`mise run <task>`) rather than a README full of commands to copy-paste and remember.
-- **Local Kubernetes via `k3d`**: a full, disposable Kubernetes cluster running as Docker containers inside the devcontainer — used both for manual local testing and as the target for the automated end-to-end test suite.
-
-```bash
-mise run k8s-setup-local     # spin up a cluster, build images, deploy the app
-mise run k8s-setup-minimal   # bare cluster only, nothing deployed
-mise run k8s-setup-gitops    # cluster + Flux, syncing from study-app-gitops
-mise run e2e-test            # full end-to-end test suite against a real cluster
-```
-
----
-
-## CI/CD Pipeline
-
-The pipeline is intentionally **not one monolithic workflow** — it's a set of small, independently-triggered workflows chained together via GitHub Actions' path filtering and reusable workflows (`workflow_call`), which keeps each pipeline stage readable and independently debuggable rather than one large, opaque file.
-
-| Stage | Workflow | What It Does |
-|---|---|---|
-| **Path-aware triggering** | `check_paths` job (per component) | Uses `dorny/paths-filter` so a PR only triggers the backend or frontend pipeline for the component that actually changed — critical in a monorepo to avoid wasted CI time and false-positive failures |
-| **Lint & format** | Ruff, run with the exact same command/context locally and in CI | Enforces both correctness-oriented lint rules (e.g. flagging blind exception handling, naive datetimes) and consistent formatting |
-| **Test & coverage** | Pytest + `pytest-cov` | Unit and integration tests per component, with an enforced minimum coverage threshold as a merge gate |
-| **End-to-end testing** | Python test harness (`e2e_test.py`) | Provisions a real k3d cluster, builds and loads the actual Docker images, deploys via Kustomize, and exercises the live HTTP API and frontend — not mocked, a genuine integration test against a running cluster |
-| **Release automation** | [release-please](https://github.com/googleapis/release-please) | Parses Conventional Commit history **per component** and automatically proposes semantic version bumps, changelogs, and GitHub releases — independently for backend and frontend |
-| **Image build & publish** | `docker/build-push-action`, triggered on release tag | Multi-stage, non-root, Alpine-based Docker builds, pushed to GitHub Container Registry, tagged both with the specific release version and `latest` |
-| **Vulnerability scanning** | Trivy | Scans every built image for CVEs (OS + library level) as part of the pipeline, filtered to actionable (fixable) findings |
-| **GitOps promotion** | `update-gitops.yaml` (reusable workflow) | Updates image tags in `study-app-gitops` — **dev is committed automatically**, **prod is opened as a pull request** requiring human review before merge |
-| **Deployment** | Flux | Continuously reconciles the cluster against `study-app-gitops`, applying changes within seconds of a merge |
-
-### Branch Protection & Merge Discipline
-
-- Direct pushes to `main` are blocked; every change goes through a pull request.
-- Required status checks (lint, test, coverage, image build/scan) must pass before merge.
-- Commit messages follow **Conventional Commits**, enforced via a `commitizen` pre-commit hook — this isn't just style convention, it's the literal input data the release automation depends on to determine which component changed and what kind of version bump is warranted.
-
----
-
-## Containerization
-
-Docker images went through several deliberate optimization passes, each verified with concrete before/after size and vulnerability-count measurements:
-
-1. **Baseline** (`python:latest`): ~450MB, 400+ CVEs — full Debian package surface, unused by the application.
-2. **Slim base** (`python:3.13-slim`): ~80MB, ~19 CVEs.
-3. **Alpine base** (`python:3.13-alpine`): ~53MB.
-4. **Multi-stage build + BuildKit cache mounts**: ~20MB, 0 actionable CVEs. Dependencies are installed in a disposable builder stage; only the resulting virtual environment is copied into a minimal final image — no build tooling, no source clutter, no package manager.
-5. **Non-root execution**: a dedicated, explicitly UID/GID-pinned user; the container never runs as root.
-6. **Dev/production dependency separation**: build and test tooling (`ruff`, `pytest`, etc.) is scoped to a dependency group excluded from production builds, keeping the shipped image free of anything not required at runtime.
-
----
-
-## GitOps & Deployment Strategy
-
-Kubernetes manifests are managed with **Kustomize**, using a base + environment-overlay pattern:
-
-```
-apps/
-├── base/            # environment-agnostic Deployment/Service definitions
-├── dev/              # namespace, dev- name prefix, dev image tags
-└── prod/             # prod- name prefix, prod image tags, prod-specific config
-```
-
-- Overlays patch only what differs per environment (image tags, environment variables, name prefixes) — the base manifests are never duplicated.
-- **Flux** watches `study-app-gitops` and reconciles the cluster to match it automatically, on a short interval — the cluster's actual state is always a direct reflection of what's committed to Git, not a manually-applied, drift-prone snapshot.
-- Deploy authentication uses a **repository-scoped SSH deploy key**, not a personal credential — limiting blast radius to exactly the one repository that needs access.
-
----
-
-## Repository Structure
+## 📁 Repository Structure
 
 ```
 .
 ├── src/
 │   ├── backend/          # FastAPI service
 │   └── frontend/         # Flask service
-├── kubernetes/            # Local dev cluster config, Kustomize manifests (local),
-│                           end-to-end test suite
-├── scripts/               # Reusable automation: deploy key setup, GitOps tag updates
-└── .github/workflows/     # CI/CD pipeline definitions
+├── Kubernetes/           # Local dev cluster config, Kustomize manifests (local), e2e test suite
+├── scripts/              # Reusable automation: deploy key setup, GitOps tag updates
+└── .github/workflows/    # CI/CD pipeline definitions
 ```
 
 ---
 
-## Notable Engineering Decisions
+## 🔄 CI/CD Pipeline
 
-- **Independent per-component versioning over lockstep releases** — avoids unnecessary redeploys of unchanged services, at the cost of slightly more complex release tooling.
-- **Reusable GitHub Actions workflows over duplicated YAML** — deliberately weighed against a "just template everything" instinct: at this project's scale, explicit, readable, per-component pipelines were judged more valuable than DRY abstraction; that calculus would flip at significantly larger scale (many more services/teams).
-- **Dev auto-deploys, prod requires a PR** — a concrete, opinionated trust boundary: speed where the cost of being wrong is low, a human checkpoint where it isn't.
-- **GitOps over direct cluster access** — the cluster never receives `kubectl apply` from CI directly; every change flows through Git first, giving a full audit trail and making the deployed state reproducible from source control alone.
+| Stage | Workflow | What It Does |
+|---|---|---|
+| **Path-aware triggering** | `check_paths` job (per component) | `dorny/paths-filter` so a PR only triggers the backend or frontend pipeline for the component that actually changed |
+| **Lint & format** | Ruff, identical locally and in CI | Correctness-oriented lint rules (e.g. blind exception handling, naive datetimes) plus formatting |
+| **Test & coverage** | Pytest + `pytest-cov` | Per-component unit/integration tests with an enforced minimum coverage threshold as a merge gate |
+| **End-to-end testing** | `e2e_test.py` | Provisions a real k3d cluster, builds and loads the actual Docker images, deploys via Kustomize, exercises the live HTTP API and frontend — not mocked |
+| **Release automation** | [release-please](https://github.com/googleapis/release-please) | Parses Conventional Commit history per component, proposes semantic version bumps, changelogs, and GitHub releases — independently for backend and frontend |
+| **Image build & publish** | `docker/build-push-action`, on release tag | Multi-stage, non-root, Alpine-based builds, pushed to GHCR tagged with both the release version and `latest` |
+| **Vulnerability scanning** | Trivy | Scans every built image for OS + library CVEs, filtered to actionable (fixable) findings |
+| **GitOps promotion** | `update-gitops.yaml` | Updates image tags in `study-app-gitops` — dev committed automatically, prod opened as a PR requiring human review |
+| **Deployment** | Flux | Continuously reconciles the cluster against `study-app-gitops` |
+
+**Merge discipline:** direct pushes to `main` are blocked; every change goes through a PR with required status checks (lint, test, coverage, image build/scan). Commit messages follow **Conventional Commits**, enforced via a `commitizen` pre-commit hook — release-please depends on this history to determine which component changed and what version bump is warranted.
 
 ---
 
-## Local Development
+## 📦 Containerization
+
+Each optimization pass was verified with concrete before/after measurements:
+
+| Stage | Base | Size | CVEs |
+|---|---|---|---|
+| Baseline | `python:latest` | ~450MB | 400+ |
+| Slim | `python:3.13-slim` | ~80MB | ~19 |
+| Alpine | `python:3.13-alpine` | ~53MB | — |
+| Multi-stage + BuildKit cache mounts | (final image) | ~20MB | 0 actionable |
+
+Dependencies install in a disposable builder stage; only the resulting virtual environment is copied into the final image — no build tooling, no source clutter, no package manager. The container runs as a dedicated, explicitly UID/GID-pinned non-root user, and dev/test tooling (`ruff`, `pytest`, etc.) is scoped to a dependency group excluded entirely from production builds.
+
+---
+
+## 🚀 GitOps & Deployment Strategy
+
+Kubernetes manifests are managed with Kustomize, base + environment-overlay:
+
+```
+apps/
+├── base/    # environment-agnostic Deployment/Service definitions
+├── dev/     # namespace, dev- name prefix, dev image tags
+└── prod/    # prod- name prefix, prod image tags, prod-specific config
+```
+
+Overlays patch only what differs per environment — the base manifests are never duplicated. Flux watches `study-app-gitops` and reconciles the cluster to match it on a short interval, so cluster state is always a direct reflection of what's committed to Git, not a manually-applied snapshot. Deploy authentication uses a repository-scoped SSH deploy key, not a personal credential, limiting blast radius to exactly the one repo that needs access.
+
+---
+
+## 🎯 Notable Engineering Decisions
+
+- **Independent per-component versioning over lockstep releases** — avoids unnecessary redeploys of unchanged services, at the cost of slightly more complex release tooling.
+- **Reusable GitHub Actions workflows over duplicated YAML** — weighed deliberately against a "template everything" instinct; at this project's scale, explicit per-component pipelines were judged more valuable than DRY abstraction.
+- **Dev auto-deploys, prod requires a PR** — a concrete, opinionated trust boundary between low-cost and high-cost mistakes.
+- **GitOps over direct cluster access** — every change flows through Git first, giving a full audit trail and a deployed state reproducible from source control alone.
+
+---
+
+## 🛠️ Local Development
+
+**Prerequisites:** Docker (with enough resources to run a k3d cluster inside Docker-in-Docker) and a devcontainer-capable editor (e.g. VS Code with the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension).
 
 ```bash
 git clone git@github.com:AhsanRahat12/Study_App.git
 cd Study_App
-# Devcontainer handles the rest of the toolchain automatically
-mise run k8s-setup-local
+# Open in a devcontainer — it handles the rest of the toolchain automatically
+mise run k8s-setup-local     # spin up a cluster, build images, deploy the app
+mise run k8s-setup-minimal   # bare cluster only, nothing deployed
+mise run k8s-setup-gitops    # cluster + Flux, syncing from study-app-gitops
+mise run e2e-test            # full end-to-end test suite against a real cluster
 ```
 
-## Contributing
+Pull requests only — commit messages must follow [Conventional Commits](https://www.conventionalcommits.org/).
 
-Pull requests only — see [Branch Protection & Merge Discipline](#branch-protection--merge-discipline) above. Commit messages must follow [Conventional Commits](https://www.conventionalcommits.org/).
+---
+
+## 🌐 Connect
+
+[LinkedIn](https://www.linkedin.com/in/rahatahsan/) &nbsp;•&nbsp; [Twitter/X](https://x.com/RahatAhsan20) &nbsp;•&nbsp; [GitHub (Main Profile)](https://github.com/AhsanRahat12) &nbsp;•&nbsp; [Medium](https://medium.com/@s.rahatahsan)
