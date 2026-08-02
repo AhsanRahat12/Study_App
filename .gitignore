@@ -1,5 +1,8 @@
 dev-keys/
 
+# Local-only Claude Code guidance file, not meant for the repo
+CLAUDE.md
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

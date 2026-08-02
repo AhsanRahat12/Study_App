@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find / -maxdepth 4 -iname \"*homelab*\" -not -path \"*/.*\")",
+      "Read(//home/**)",
+      "Read(//home/rahat/**)"
+    ]
+  }
+}
